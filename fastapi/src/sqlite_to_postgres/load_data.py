@@ -39,11 +39,13 @@ def conn_context(db_path: str):
 
 if __name__ == '__main__':
     dsl = {
-        'dbname': os.environ.get('POSTGRES_DB'),
+        'dbname': os.environ.get('POSTGRES_NAME'),
         'user': os.environ.get('POSTGRES_USER'),
         'password': os.environ.get('POSTGRES_PASSWORD'),
         'host': 'db',
         'port': 5432,
     }
-    with conn_context('sqlite_to_postgres/db.sqlite') as sqlite_conn, psycopg2.connect(**dsl, cursor_factory=DictCursor) as pg_conn:
+    with conn_context('/opt/app/src/sqlite_to_postgres/db.sqlite') as sqlite_conn, psycopg2.connect(
+        **dsl, cursor_factory=DictCursor
+    ) as pg_conn:
         load_from_sqlite(sqlite_conn, pg_conn)
