@@ -7,7 +7,7 @@ from fastapi import Depends
 
 from db.elastic import get_elastic
 from db.redis import get_redis
-from models.film import Film
+from models.film import ESFilm
 
 FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5  # 5 минут
 
@@ -18,7 +18,7 @@ class FilmService:
         self.elastic = elastic
 
     # get_by_id возвращает объект фильма. Он опционален, так как фильм может отсутствовать в базе
-    async def get_by_id(self, film_id: str) -> Optional[Film]:
+    async def get_by_id(self, film_id: str) -> Optional[ESFilm]:
         # Пытаемся получить данные из кеша, потому что оно работает быстрее
         film = await self._film_from_cache(film_id)
         if not film:
@@ -32,14 +32,14 @@ class FilmService:
 
         return film
 
-    async def _get_film_from_elastic(self, film_id: str) -> Optional[Film]:
+    async def _get_film_from_elastic(self, film_id: str) -> Optional[ESFilm]:
         try:
             doc = await self.elastic.get('movies', film_id)
         except NotFoundError:
             return None
-        return Film(**doc['_source'])
+        return ESFilm(**doc['_source'])
 
-    async def _film_from_cache(self, film_id: str) -> Optional[Film]:
+    async def _film_from_cache(self, film_id: str) -> Optional[ESFilm]:
         # Пытаемся получить данные о фильме из кеша, используя команду get
         # https://redis.io/commands/get
         data = await self.redis.get(film_id)
@@ -47,10 +47,10 @@ class FilmService:
             return None
 
         # pydantic предоставляет удобное API для создания объекта моделей из json
-        film = Film.parse_raw(data)
+        film = ESFilm.parse_raw(data)
         return film
 
-    async def _put_film_to_cache(self, film: Film):
+    async def _put_film_to_cache(self, film: ESFilm):
         # Сохраняем данные о фильме, используя команду set
         # Выставляем время жизни кеша — 5 минут
         # https://redis.io/commands/set
