@@ -7,22 +7,20 @@ services:
       - postgres_volume:/var/lib/postgresql/data
       - ./scripts:/docker-entrypoint-initdb.d
     env_file:
-      - ./app/example/.env
+      - ./fastapi/.env
     environment:
       PGDATA: "/var/lib/postgresql/data/pgdata"
       
   service:
-    build: app
-    image: django
-    volumes:
-      - static_volume:/opt/app/static
-      - media_volume:/opt/app/media
+    build: fastapi
+    image: fastapi
     ports:
       - "8000:8000"
     env_file:
-      - ./app/example/.env
+      - ./fastapi/.env
     depends_on:
       - db
+      - redis
       - elasticsearch
 
   nginx:
@@ -31,22 +29,10 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/configs:/etc/nginx/conf.d:ro
       - ./data:/data/:ro
-      - static_volume:/opt/app/static
-      - media_volume:/opt/app/media
     depends_on:
       - service
     ports:
       - "80:80"
-
-  swagger-ui:
-    image: swaggerapi/swagger-ui
-    container_name: swagger_ui_container
-    ports:
-        - "8080:8080"
-    volumes:
-        - ./openapi.yaml:/swagger/openapi.yaml
-    environment:
-      SWAGGER_JSON: /swagger/openapi.yaml
   
   elasticsearch:
     image: elasticsearch:7.17.6
@@ -58,14 +44,16 @@ services:
     volumes:
       - /opt/elasticsearch/data
 
+  redis:
+    image: redis:alpine
+    command: redis-server
+
   etl:
     build: postgres_to_es
     env_file:
-      - ./app/example/.env
+      - ./fastapi/.env
     depends_on:
       - service
-      
+
 volumes:
   postgres_volume:
-  static_volume:
-  media_volume:
