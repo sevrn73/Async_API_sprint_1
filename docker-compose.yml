@@ -25,19 +25,18 @@ services:
       - db
       - elasticsearch
       
-  # fastapi:
-  #   build: fastapi
-  #   image: fastapi
-  #   ports:
-  #     - "8001:8001"
-  #   env_file:
-  #     - ./fastapi/.env
-  #   depends_on:
-  #     - db
-  #     - redis
-  #     - elasticsearch
-  #     - service
-
+  fastapi:
+    build: fastapi
+    image: fastapi
+    ports:
+      - "8001:8001"
+    env_file:
+      - ./fastapi/.env
+    depends_on:
+      - db
+      - redis
+      - elasticsearch
+      - service
 
   nginx:
     image: nginx
