@@ -21,6 +21,12 @@ class FilmworkData(BaseModel):
     genres: Optional[List[str]]
 
 
+class ESGenreData(BaseModel):
+    id: str
+    genre: str
+    description: Optional[str]
+
+
 class ESPersonData(BaseModel):
     id: str
     name: str
