@@ -7,21 +7,37 @@ services:
       - postgres_volume:/var/lib/postgresql/data
       - ./scripts:/docker-entrypoint-initdb.d
     env_file:
-      - ./fastapi/.env
+      - ./app/example/.env
     environment:
       PGDATA: "/var/lib/postgresql/data/pgdata"
       
   service:
-    build: fastapi
-    image: fastapi
+    build: app
+    image: django
+    volumes:
+      - static_volume:/opt/app/static
+      - media_volume:/opt/app/media
     ports:
       - "8000:8000"
     env_file:
-      - ./fastapi/.env
+      - ./app/example/.env
     depends_on:
       - db
-      - redis
       - elasticsearch
+      
+  # fastapi:
+  #   build: fastapi
+  #   image: fastapi
+  #   ports:
+  #     - "8001:8001"
+  #   env_file:
+  #     - ./fastapi/.env
+  #   depends_on:
+  #     - db
+  #     - redis
+  #     - elasticsearch
+  #     - service
+
 
   nginx:
     image: nginx
@@ -29,6 +45,8 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/configs:/etc/nginx/conf.d:ro
       - ./data:/data/:ro
+      - static_volume:/opt/app/static
+      - media_volume:/opt/app/media
     depends_on:
       - service
     ports:
@@ -51,9 +69,12 @@ services:
   etl:
     build: postgres_to_es
     env_file:
-      - ./fastapi/.env
+      - ./app/example/.env
     depends_on:
       - service
 
 volumes:
   postgres_volume:
+  static_volume:
+  media_volume:
+

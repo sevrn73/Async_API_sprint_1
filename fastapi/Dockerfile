@@ -1,7 +1,7 @@
 FROM python:3.8
 
 
-WORKDIR /opt/app
+WORKDIR /opt/fastapi
 
 COPY .env .env
 COPY requirements.txt requirements.txt
@@ -11,7 +11,7 @@ RUN  pip install --upgrade pip && \
 
 COPY . .
 
-EXPOSE 8000
+EXPOSE 8001
 
-ENTRYPOINT ["python", "/opt/app/src/wait_for_db.py"]
+ENTRYPOINT ["python", "/opt/fastapi/src/wait_for_db.py"]
 
