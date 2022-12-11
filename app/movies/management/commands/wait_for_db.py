@@ -22,9 +22,6 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS('Database available!'))
 
-        p = subprocess.Popen(['python', 'manage.py', 'collectstatic', '--no-input'])
-        p.wait()
-
         p = subprocess.Popen(['python', 'manage.py', 'migrate'])
         p.wait()
 
@@ -161,4 +158,4 @@ class Command(BaseCommand):
         p = subprocess.Popen(['python', 'sqlite_to_postgres/load_data.py'])
         p.wait()
 
-        subprocess.run(['uwsgi', '--strict', '--ini', 'uwsgi.ini'])
+        subprocess.run(['sh', '/opt/app/uwsgi_worker.sh'])
