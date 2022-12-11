@@ -1,5 +1,5 @@
 from typing import Optional, List
-from base_model import ESModel
+from models.base_model import ESModel
 
 
 class ESPerson(ESModel):
@@ -7,11 +7,14 @@ class ESPerson(ESModel):
     name: str
     film_ids: List[str]
 
+
 class ESActor(ESPerson):
     pass
 
+
 class ESDirector(ESPerson):
     pass
+
 
 class ESWriter(ESPerson):
     pass
