@@ -1,6 +1,8 @@
+from datetime import datetime
+from extract import PSExtract
 from psycopg2.extensions import connection as _connection
 from psycopg2.extras import DictCursor
-from extract import PSExtract
+
 from transform import *
 from load import ESLoad
 from state import State
@@ -40,12 +42,12 @@ class EtlProcess:
         while True:
             data = postgres_extractor.extract_person_data(last_modified)
             if data:
-                transformed_data = [parse_from_postgres_to_es(_) for _ in data]
-                es_loader.send_data(es_loader.es, transformed_data)
+                transformed_data = [parse_persons_postgres_to_es(_) for _ in data]
+                es_loader.send_persons_data(es_loader.es, transformed_data)
 
                 postgres_extractor.offset += len(data)
                 state.set_state("offset", postgres_extractor.offset)
-                state.set_state('last_modified', data[-1]['modified'].strftime('%Y-%m-%d'))
+                state.set_state('last_modified', datetime.now().strftime('%Y-%m-%d'))
             else:
                 postgres_extractor.offset = 0
                 state.set_state("offset", 0)
@@ -57,11 +59,11 @@ class EtlProcess:
             data = postgres_extractor.extract_genre_data(last_modified)
             if data:
                 transformed_data = [parse_genres_postgres_to_es(_) for _ in data]
-                es_loader.send_data(es_loader.es, transformed_data)
+                es_loader.send_genres_data(es_loader.es, transformed_data)
 
                 postgres_extractor.offset += len(data)
                 state.set_state("offset", postgres_extractor.offset)
-                state.set_state('last_modified', data[-1]['modified'].strftime('%Y-%m-%d'))
+                state.set_state('last_modified', datetime.now().strftime('%Y-%m-%d'))
             else:
                 postgres_extractor.offset = 0
                 state.set_state("offset", 0)

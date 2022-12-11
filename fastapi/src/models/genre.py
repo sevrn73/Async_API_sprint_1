@@ -7,4 +7,3 @@ class ESGenre(ESModel):
     id: str
     name: str
     description: str
-    film_ids: List[str]

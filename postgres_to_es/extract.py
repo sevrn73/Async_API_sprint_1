@@ -66,7 +66,7 @@ class PSExtract:
     def extract_person_data(self, last_modified: str) -> list:
         where = f"WHERE p.modified > '{last_modified}' "
         query = (
-            "SELECT p.id , p.full_name"
+            "SELECT p.id , p.full_name as name "
             "FROM content.person p "
             f"{where}"
             "GROUP BY p.id "
@@ -79,7 +79,7 @@ class PSExtract:
     def extract_genre_data(self, last_modified: str) -> list:
         where = f"WHERE g.modified > '{last_modified}' "
         query = (
-            "SELECT g.id, g.name "
+            "SELECT g.id, g.name as genre, g.description "
             "FROM content.genre g "
             f"{where}"
             "GROUP BY g.id "
