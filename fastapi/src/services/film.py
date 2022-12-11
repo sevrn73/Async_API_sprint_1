@@ -1,6 +1,8 @@
+import json
 from functools import lru_cache
-from typing import Optional
-
+from typing import Optional, List
+from pydantic import parse_raw_as
+from pydantic.json import pydantic_encoder
 from aioredis import Redis
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
@@ -17,17 +19,12 @@ class FilmService:
         self.redis = redis
         self.elastic = elastic
 
-    # get_by_id возвращает объект фильма. Он опционален, так как фильм может отсутствовать в базе
     async def get_by_id(self, film_id: str) -> Optional[ESFilm]:
-        # Пытаемся получить данные из кеша, потому что оно работает быстрее
         film = await self._film_from_cache(film_id)
         if not film:
-            # Если фильма нет в кеше, то ищем его в Elasticsearch
             film = await self._get_film_from_elastic(film_id)
             if not film:
-                # Если он отсутствует в Elasticsearch, значит, фильма вообще нет в базе
                 return None
-            # Сохраняем фильм  в кеш
             await self._put_film_to_cache(film)
 
         return film
@@ -40,22 +37,58 @@ class FilmService:
         return ESFilm(**doc['_source'])
 
     async def _film_from_cache(self, film_id: str) -> Optional[ESFilm]:
-        # Пытаемся получить данные о фильме из кеша, используя команду get
-        # https://redis.io/commands/get
         data = await self.redis.get(film_id)
         if not data:
             return None
 
-        # pydantic предоставляет удобное API для создания объекта моделей из json
         film = ESFilm.parse_raw(data)
         return film
 
     async def _put_film_to_cache(self, film: ESFilm):
-        # Сохраняем данные о фильме, используя команду set
-        # Выставляем время жизни кеша — 5 минут
-        # https://redis.io/commands/set
-        # pydantic позволяет сериализовать модель в json
         await self.redis.set(film.id, film.json(), expire=FILM_CACHE_EXPIRE_IN_SECONDS)
+
+
+class FilmsService:
+    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
+        self.redis = redis
+        self.elastic = elastic
+
+    async def get_by_ids(self, rating_filter: float, sort: bool, films_ids: List[str]) -> Optional[List[ESFilm]]:
+        films = await self._films_from_cache(f'{rating_filter}_{sort}_{films_ids}')
+        if not films:
+            films = await self._get_films_from_elastic(rating_filter, films_ids)
+            if not films:
+                return None
+            await self._put_films_to_cache(films, f'{rating_filter}_{sort}_{films_ids}')
+
+        return films
+
+    async def _get_films_from_elastic(self, rating_filter: float, films_ids: List[str]) -> Optional[List[ESFilm]]:
+        result = []
+        for film_id in films_ids:
+            try:
+                film = await self.elastic.get('movies', film_id)
+            except NotFoundError:
+                continue
+            if rating_filter:
+                if film['_source']['imdb_rating'] >= rating_filter:
+                    result.append(ESFilm(**film['_source']))
+            else:
+                result.append(ESFilm(**film['_source']))
+        return result
+
+    async def _films_from_cache(self, redis_key: str) -> Optional[List[ESFilm]]:
+        data = await self.redis.get(redis_key)
+        if not data:
+            return None
+
+        films = parse_raw_as(List[ESFilm], data)
+        return films
+
+    async def _put_films_to_cache(self, films: List[ESFilm], redis_key: str):
+        await self.redis.set(
+            redis_key, json.dumps(films, default=pydantic_encoder), expire=FILM_CACHE_EXPIRE_IN_SECONDS
+        )
 
 
 @lru_cache()
@@ -64,3 +97,11 @@ def get_film_service(
     elastic: AsyncElasticsearch = Depends(get_elastic),
 ) -> FilmService:
     return FilmService(redis, elastic)
+
+
+@lru_cache()
+def get_films_service(
+    redis: Redis = Depends(get_redis),
+    elastic: AsyncElasticsearch = Depends(get_elastic),
+) -> FilmsService:
+    return FilmsService(redis, elastic)
