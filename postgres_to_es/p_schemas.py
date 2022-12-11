@@ -26,11 +26,9 @@ class ESGenreData(BaseModel):
     genre: str
     description: Optional[str]
 
-
 class ESPersonData(BaseModel):
     id: str
     name: str
-
 
 class ESFilmworkData(BaseModel):
     id: str
