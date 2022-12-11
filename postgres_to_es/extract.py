@@ -62,3 +62,30 @@ class PSExtract:
         data = self.extract_data(query, self.curs)
 
         return data
+
+    def extract_person_data(self, last_modified: str) -> list:
+        where = f"WHERE p.modified > '{last_modified}' "
+        query = (
+            "SELECT p.id , p.full_name"
+            "FROM content.person p "
+            f"{where}"
+            "GROUP BY p.id "
+            "ORDER BY modified "
+            f"LIMIT {self.LIMIT_ROWS} OFFSET {self.offset};"
+        )
+        data = self.extract_data(query, self.curs)
+        return data
+
+    def extract_genre_data(self, last_modified: str) -> list:
+        where = f"WHERE g.modified > '{last_modified}' "
+        query = (
+            "SELECT g.id, g.name "
+            "FROM content.genre g "
+            f"{where}"
+            "GROUP BY g.id "
+            "ORDER BY modified "
+            f"LIMIT {self.LIMIT_ROWS} OFFSET {self.offset};"
+        )
+        data = self.extract_data(query, self.curs)
+
+        return data

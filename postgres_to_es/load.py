@@ -1,6 +1,6 @@
 from typing import List, Tuple
 from elasticsearch import Elasticsearch, helpers
-from p_schemas import ESFilmworkData
+from p_schemas import ESFilmworkData, ESPersonData, ESGenreData
 from backoff import backoff
 
 
@@ -12,4 +12,16 @@ class ESLoad:
     @backoff()
     def send_data(es: Elasticsearch, es_data: List[ESFilmworkData]) -> Tuple[int, list]:
         query = [{"_index": "movies", "_id": data.id, "_source": data.dict()} for data in es_data]
+        helpers.bulk(es, query)
+
+    @staticmethod
+    @backoff()
+    def send_persons_data(es: Elasticsearch, es_data: List[ESPersonData]) -> Tuple[int, list]:
+        query = [{"_index": "persons", "_id": data.id, "_source": data.dict()} for data in es_data]
+        helpers.bulk(es, query)
+
+    @staticmethod
+    @backoff()
+    def send_genres_data(es: Elasticsearch, es_data: List[ESGenreData]) -> Tuple[int, list]:
+        query = [{"_index": "genres", "_id": data.id, "_source": data.dict()} for data in es_data]
         helpers.bulk(es, query)
