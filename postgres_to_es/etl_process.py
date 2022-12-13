@@ -13,6 +13,16 @@ class EtlProcess:
 
     @staticmethod
     def init_process(pg_conn: _connection, curs: DictCursor, es_connect: dict, state: State):
+        """
+        Функция инициализации
+        Parameters
+        ----------
+        :param pg_conn: соединение с Postgres
+        :param curs: cursor postgres
+        :param es_connect: соединение с ElasticSearch
+        :param state: объект state
+        ----------
+        """
         last_modified = state.get_state("last_modified")
         offset = state.get_state("offset")
         postgres_extractor = PSExtract(pg_conn, curs, offset)
@@ -20,14 +30,24 @@ class EtlProcess:
         return last_modified, postgres_extractor, es_loader
 
 
-    def check_and_update(pg_conn: _connection, curs: DictCursor, es_connect: dict, state: State):
+    def check_and_update_filmworks(pg_conn: _connection, curs: DictCursor, es_connect: dict, state: State):
+        """
+        Основная функция ETL для индекса movies
+        Parameters
+        ----------
+        :param pg_conn: соединение с Postgres
+        :param curs: cursor postgres
+        :param es_connect: соединение с ElasticSearch
+        :param state: объект state
+        ----------
+        """
         last_modified, postgres_extractor, es_loader = EtlProcess.init_process(pg_conn, curs, es_connect, state)
         for model_name in EtlProcess.MODEL_NAMES:
             while True:
-                filmwork_data = postgres_extractor.extract_filmwork_data(last_modified, model_name)
+                filmwork_data = postgres_extractor.extract_table_data(last_modified,table_name="film_work", model_name=model_name)
                 if filmwork_data:
                     transformed_filmwork_data = [parse_from_postgres_to_es(_) for _ in filmwork_data]
-                    es_loader.send_data(es_loader.es, transformed_filmwork_data)
+                    es_loader.send_data(es_loader.es, transformed_filmwork_data, "movies")
 
                     postgres_extractor.offset += len(filmwork_data)
                     state.set_state("offset", postgres_extractor.offset)
@@ -38,12 +58,22 @@ class EtlProcess:
                     break
 
     def check_and_update_persons(pg_conn: _connection, curs: DictCursor, es_connect: dict, state: State):
+        """
+        Основная функция ETL для индекса persons
+        Parameters
+        ----------
+        :param pg_conn: соединение с Postgres
+        :param curs: cursor postgres
+        :param es_connect: соединение с ElasticSearch
+        :param state: объект state
+        ----------
+        """
         last_modified, postgres_extractor, es_loader = EtlProcess.init_process(pg_conn, curs, es_connect, state)
         while True:
-            data = postgres_extractor.extract_person_data(last_modified)
+            data = postgres_extractor.extract_table_data(last_modified, table_name="persons")
             if data:
                 transformed_data = [parse_persons_postgres_to_es(_) for _ in data]
-                es_loader.send_persons_data(es_loader.es, transformed_data)
+                es_loader.send_data(es_loader.es, transformed_data, "persons")
 
                 postgres_extractor.offset += len(data)
                 state.set_state("offset", postgres_extractor.offset)
@@ -54,12 +84,22 @@ class EtlProcess:
                 break
 
     def check_and_update_genres(pg_conn: _connection, curs: DictCursor, es_connect: dict, state: State):
+        """
+        Основная функция ETL для индекса genres
+        Parameters
+        ----------
+        :param pg_conn: соединение с Postgres
+        :param curs: cursor postgres
+        :param es_connect: соединение с ElasticSearch
+        :param state: объект state
+        ----------
+        """
         last_modified, postgres_extractor, es_loader = EtlProcess.init_process(pg_conn, curs, es_connect, state)
         while True:
-            data = postgres_extractor.extract_genre_data(last_modified)
+            data = postgres_extractor.extract_table_data(last_modified, table_name="genres")
             if data:
                 transformed_data = [parse_genres_postgres_to_es(_) for _ in data]
-                es_loader.send_genres_data(es_loader.es, transformed_data)
+                es_loader.send_data(es_loader.es, transformed_data, "genres")
 
                 postgres_extractor.offset += len(data)
                 state.set_state("offset", postgres_extractor.offset)

@@ -26,7 +26,6 @@ class FilmService:
             if not film:
                 return None
             await self._put_film_to_cache(film)
-
         return film
 
     async def _get_film_from_elastic(self, film_id: str) -> Optional[ESFilm]:
@@ -40,7 +39,6 @@ class FilmService:
         data = await self.redis.get(film_id)
         if not data:
             return None
-
         film = ESFilm.parse_raw(data)
         return film
 

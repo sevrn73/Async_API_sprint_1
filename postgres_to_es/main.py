@@ -22,27 +22,30 @@ def main(ps_connect: dict, es_connect: dict):
             ) as pg_conn, pg_conn.cursor() as curs:
                 storage = JsonFileStorage('state.json')
                 state = State(storage)
+                EtlProcess.check_and_update_filmworks(pg_conn, curs, es_connect, state)
+        except psycopg2.OperationalError:
+            logger.error('Error connecting to Postgres database while parse Filmworks')
 
-                EtlProcess.check_and_update(pg_conn, curs, es_connect, state)
-
+        try:
             with closing(
                 psycopg2.connect(**ps_connect, cursor_factory=DictCursor)
             ) as pg_conn, pg_conn.cursor() as curs:
                 storage = JsonFileStorage('state_persons.json')
                 state = State(storage)
-
                 EtlProcess.check_and_update_persons(pg_conn, curs, es_connect, state)
+        except psycopg2.OperationalError:
+            logger.error('Error connecting to Postgres database while parse Persons')
 
+        try:
             with closing(
                 psycopg2.connect(**ps_connect, cursor_factory=DictCursor)
             ) as pg_conn, pg_conn.cursor() as curs:
                 storage = JsonFileStorage('state_genres.json')
                 state = State(storage)
-
                 EtlProcess.check_and_update_genres(pg_conn, curs, es_connect, state)
-
         except psycopg2.OperationalError:
-            logger.error('Error connecting to Postgres database')
+            logger.error('Error connecting to Postgres database while parse Genres')
+
 
         time.sleep(1)
 
