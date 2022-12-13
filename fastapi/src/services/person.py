@@ -1,6 +1,8 @@
+import json
 from functools import lru_cache
-from typing import Optional
-
+from typing import Optional, List
+from pydantic import parse_raw_as
+from pydantic.json import pydantic_encoder
 from aioredis import Redis
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
@@ -46,9 +48,58 @@ class PersonService:
         await self.redis.set(person.id, person.json(), expire=FILM_CACHE_EXPIRE_IN_SECONDS)
 
 
+class PersonsService:
+    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
+        self.redis = redis
+        self.elastic = elastic
+
+    async def get_page_number(self, sort: bool, page_number: int, films_on_page: int) -> Optional[ESPerson]:
+        persons = await self._persons_from_cache(f'{sort}_{page_number}_{films_on_page}')
+        if not persons:
+            persons = await self._get_persons_from_elastic(sort, page_number, films_on_page)
+            if not persons:
+                return None
+            await self._put_persons_to_cache(persons, f'{sort}_{page_number}_{films_on_page}')
+
+        return persons
+
+    async def _get_persons_from_elastic(self, sort: bool, page_number: int, films_on_page: int) -> Optional[ESPerson]:
+        try:
+            persons = await self.elastic.search(
+                index='persons',
+                from_=page_number,
+                size=films_on_page,
+                sort=f"name.keyword:{'asc' if sort else 'desc'}",
+            )
+        except NotFoundError:
+            return None
+        return [ESPerson(**_['_source']) for _ in persons['hits']['hits']]
+
+    async def _persons_from_cache(self, redis_key: str) -> Optional[ESPerson]:
+        data = await self.redis.get(redis_key)
+        if not data:
+            return None
+
+        persons = parse_raw_as(List[ESPerson], data)
+        return persons
+
+    async def _put_persons_to_cache(self, persons: List[ESPerson], redis_key: str):
+        await self.redis.set(
+            redis_key, json.dumps(persons, default=pydantic_encoder), expire=FILM_CACHE_EXPIRE_IN_SECONDS
+        )
+
+
 @lru_cache()
 def get_person_service(
     redis: Redis = Depends(get_redis),
     elastic: AsyncElasticsearch = Depends(get_elastic),
 ) -> PersonService:
     return PersonService(redis, elastic)
+
+
+@lru_cache()
+def get_persons_service(
+    redis: Redis = Depends(get_redis),
+    elastic: AsyncElasticsearch = Depends(get_elastic),
+) -> PersonsService:
+    return PersonsService(redis, elastic)

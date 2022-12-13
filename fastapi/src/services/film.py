@@ -53,29 +53,41 @@ class FilmsService:
         self.redis = redis
         self.elastic = elastic
 
-    async def get_by_ids(self, rating_filter: float, sort: bool, films_ids: List[str]) -> Optional[List[ESFilm]]:
-        films = await self._films_from_cache(f'{rating_filter}_{sort}_{films_ids}')
+    async def get_page_number(
+        self, rating_filter: float, sort: bool, page_number: int, films_on_page: int
+    ) -> Optional[List[ESFilm]]:
+        films = await self._films_from_cache(f'{rating_filter}_{sort}_{page_number}_{films_on_page}')
         if not films:
-            films = await self._get_films_from_elastic(rating_filter, films_ids)
+            films = await self._get_films_from_elastic(rating_filter, sort, page_number, films_on_page)
             if not films:
                 return None
-            await self._put_films_to_cache(films, f'{rating_filter}_{sort}_{films_ids}')
+            await self._put_films_to_cache(films, f'{rating_filter}_{sort}_{page_number}_{films_on_page}')
 
         return films
 
-    async def _get_films_from_elastic(self, rating_filter: float, films_ids: List[str]) -> Optional[List[ESFilm]]:
-        result = []
-        for film_id in films_ids:
-            try:
-                film = await self.elastic.get('movies', film_id)
-            except NotFoundError:
-                continue
-            if rating_filter:
-                if film['_source']['imdb_rating'] >= rating_filter:
-                    result.append(ESFilm(**film['_source']))
-            else:
-                result.append(ESFilm(**film['_source']))
-        return result
+    async def _get_films_from_elastic(
+        self, rating_filter: float, sort: bool, page_number: int, films_on_page: int
+    ) -> Optional[List[ESFilm]]:
+        try:
+            films = await self.elastic.search(
+                index='movies',
+                from_=page_number,
+                body={
+                    'query': {
+                        'range': {
+                            'imdb_rating': {
+                                'gte': rating_filter if rating_filter else 0,
+                            }
+                        }
+                    }
+                },
+                size=films_on_page,
+                sort=f"imdb_rating:{'asc' if sort else 'desc'}",
+            )
+        except NotFoundError:
+            return None
+
+        return [ESFilm(**_['_source']) for _ in films['hits']['hits']]
 
     async def _films_from_cache(self, redis_key: str) -> Optional[List[ESFilm]]:
         data = await self.redis.get(redis_key)
