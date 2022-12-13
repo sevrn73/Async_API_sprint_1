@@ -3,7 +3,7 @@ from http import HTTPStatus
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import List
-from services.person import PersonService, get_person_service
+from services.person import PersonService, get_person_service, PersonsService, get_persons_service
 
 router = APIRouter()
 
@@ -14,7 +14,10 @@ class Person(BaseModel):
 
 
 @router.get('/{person_id}', response_model=Person)
-async def person_details(person_id: str, person_service: PersonService = Depends(get_person_service)) -> Person:
+async def person_details(
+    person_id: str = 'e039eedf-4daf-452a-bf92-a0085c68e156',
+    person_service: PersonService = Depends(get_person_service),
+) -> Person:
     person = await person_service.get_by_id(person_id)
     if not person:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='person not found')
@@ -24,17 +27,14 @@ async def person_details(person_id: str, person_service: PersonService = Depends
 
 @router.get('/persons/', response_model=List[Person])
 async def persons_details(
-    presons_ids: List[str] = Query(
-        default=['e039eedf-4daf-452a-bf92-a0085c68e156', '3217bc91-bcfc-44eb-a609-82d228115c50']
-    ),
-    person_service: PersonService = Depends(get_person_service),
+    sort: bool = False,
+    page_number: int = 1,
+    presons_on_page: int = 5,
+    person_service: PersonsService = Depends(get_persons_service),
 ) -> List[Person]:
 
-    result = []
-    for person_id in presons_ids:
-        preson = await person_service.get_by_id(person_id)
-        result.append(Person(id=preson.id, name=preson.name))
-    if not result:
+    presons = await person_service.get_page_number(sort, page_number, presons_on_page)
+    if not presons:
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='presons not found')
 
-    return result
+    return presons

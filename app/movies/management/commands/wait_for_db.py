@@ -189,7 +189,8 @@ class Command(BaseCommand):
                         "english_stemmer",
                         "english_possessive_stemmer",
                         "russian_stop",
-                        "russian_stemmer"
+                        "russian_stemmer",
+                        "keyword_lowercase"
                     ]
                     }
                 }
@@ -203,7 +204,10 @@ class Command(BaseCommand):
                 },
                 "genre": {
                     "type": "text",
-                    "analyzer": "ru_en"
+                    "analyzer": "ru_en",
+                    "raw": { 
+                        "type":  "keyword"
+                    }
                 },
                 "description": {
                     "type": "text",
@@ -257,7 +261,8 @@ class Command(BaseCommand):
                         "english_stemmer",
                         "english_possessive_stemmer",
                         "russian_stop",
-                        "russian_stemmer"
+                        "russian_stemmer",
+                        "keyword_lowercase"
                     ]
                     }
                 }
@@ -271,7 +276,10 @@ class Command(BaseCommand):
                     },
                     "name": {
                         "type": "text",
-                        "analyzer": "ru_en"
+                        "analyzer": "ru_en",
+                        "raw": { 
+                            "type":  "keyword"
+                        }
                     }
                 }
             }
