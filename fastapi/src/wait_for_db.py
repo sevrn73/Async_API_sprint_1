@@ -1,13 +1,12 @@
 import time
 import subprocess
-import requests
 import logging
 from logging import config as logging_config
 from core.logger import LOGGING
 from contextlib import closing
 import psycopg2
 from psycopg2.extras import DictCursor
-from core.config import PS
+from core.config import DbSettings
 
 # Применяем настройки логирования
 logging_config.dictConfig(LOGGING)
@@ -34,5 +33,5 @@ def migrate_and_start(ps_connect: dict):
 
 
 if __name__ == '__main__':
-    ps_connect = PS().dict()
+    ps_connect = DbSettings().dict()
     migrate_and_start(ps_connect)

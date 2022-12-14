@@ -1,9 +1,9 @@
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
-from services.film import FilmService, get_film_service, FilmsService, get_films_service
+from services.film import FilmService, get_film_service
 
 router = APIRouter()
 
@@ -43,7 +43,7 @@ async def movies_details(
     sort: bool = False,
     page_number: int = 1,
     films_on_page: int = 20,
-    film_service: FilmsService = Depends(get_films_service),
+    film_service: FilmService = Depends(get_film_service),
 ) -> List[Film]:
 
     films = await film_service.get_page_number(rating_filter, sort, page_number, films_on_page)

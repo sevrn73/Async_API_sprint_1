@@ -1,9 +1,9 @@
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List
-from services.genre import GenreService, get_genre_service, GenresService, get_genres_service
+from services.genre import GenreService, get_genre_service
 
 router = APIRouter()
 
@@ -29,7 +29,7 @@ async def genres_details(
     sort: bool = False,
     page_number: int = 1,
     genres_on_page: int = 5,
-    genre_service: GenresService = Depends(get_genres_service),
+    genre_service: GenreService = Depends(get_genre_service),
 ) -> List[Genre]:
 
     genres = await genre_service.get_page_number(sort, page_number, genres_on_page)

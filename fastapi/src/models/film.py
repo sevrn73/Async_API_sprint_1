@@ -1,7 +1,6 @@
-from typing import Optional, List
+from typing import Optional
 
 from models.base_model import ESModel
-from models.person import ESPerson
 
 
 class ESFilm(ESModel):

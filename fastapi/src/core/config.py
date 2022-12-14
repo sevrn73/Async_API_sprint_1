@@ -9,26 +9,23 @@ from pydantic import BaseSettings, Field
 logging_config.dictConfig(LOGGING)
 
 
-class PS(BaseSettings):
+class DbSettings(BaseSettings):
     dbname: str = Field('', env='POSTGRES_NAME')
     user: str = Field('', env='POSTGRES_USER')
     password: str = Field('', env='POSTGRES_PASSWORD')
     host: str = Field('db', env='DB_HOST')
     port: int = Field(5432, env='DB_PORT')
 
+class ProjectSettings(BaseSettings):
+    PROJECT_NAME = Field('movies', env='PROJECT_NAME')
+    # Настройки Redis
+    REDIS_HOST = Field('127.0.0.1', env='REDIS_HOST')
+    REDIS_PORT = Field(6379, env='REDIS_PORT')
+    # Настройки Elasticsearch
+    ELASTIC_HOST = Field('127.0.0.1', env='ELASTIC_HOST')
+    ELASTIC_PORT = Field(9200, env='ELASTIC_PORT')
+    ES_USER = Field('elastic', env='ES_USER')
+    ES_PASSWORD = Field('changeme', env='ES_PASSWORD')
+    CACHE_EXPIRE_IN_SECONDS = Field(300, env='CACHE_EXPIRE_IN_SECONDS')
+    BASE_DIR = Field(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Название проекта. Используется в Swagger-документации
-PROJECT_NAME = os.getenv('PROJECT_NAME', 'movies')
-
-# Настройки Redis
-REDIS_HOST = os.getenv('REDIS_HOST', '127.0.0.1')
-REDIS_PORT = int(os.getenv('REDIS_PORT', 6379))
-
-# Настройки Elasticsearch
-ELASTIC_HOST = os.getenv('ELASTIC_HOST', '127.0.0.1')
-ELASTIC_PORT = int(os.getenv('ELASTIC_PORT', 9200))
-ES_USER = os.getenv('ES_USER', 'elastic')
-ES_PASSWORD = os.getenv('ES_PASSWORD', 'changeme')
-
-# Корень проекта
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

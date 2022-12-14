@@ -1,9 +1,9 @@
 from http import HTTPStatus
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from typing import List
-from services.person import PersonService, get_person_service, PersonsService, get_persons_service
+from services.person import PersonService, get_person_service
 
 router = APIRouter()
 
@@ -30,7 +30,7 @@ async def persons_details(
     sort: bool = False,
     page_number: int = 1,
     presons_on_page: int = 5,
-    person_service: PersonsService = Depends(get_persons_service),
+    person_service: PersonService = Depends(get_person_service),
 ) -> List[Person]:
 
     presons = await person_service.get_page_number(sort, page_number, presons_on_page)

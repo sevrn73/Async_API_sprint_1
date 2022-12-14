@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from state import JsonFileStorage, State
 from etl_process import EtlProcess
 from logger import logger
-from config import PS, ES
+from config import DbSettings, ElasticSettings
 
 load_dotenv()
 
@@ -48,6 +48,6 @@ def main(ps_connect: dict, es_connect: dict):
 
 
 if __name__ == '__main__':
-    ps_connect = PS().dict()
-    es_connect = ES().dict()
+    ps_connect = DbSettings().dict()
+    es_connect = ElasticSettings().dict()
     main(ps_connect, es_connect)

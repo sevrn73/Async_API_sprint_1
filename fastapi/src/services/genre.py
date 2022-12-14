@@ -7,11 +7,11 @@ from aioredis import Redis
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
 
+from core.config import ProjectSettings
 from db.elastic import get_elastic
 from db.redis import get_redis
 from models.genre import ESGenre
 
-FILM_CACHE_EXPIRE_IN_SECONDS = 60 * 5  # 5 минут
 
 
 class GenreService:
@@ -45,13 +45,7 @@ class GenreService:
         return genre
 
     async def _put_genre_to_cache(self, genre: ESGenre):
-        await self.redis.set(genre.id, genre.json(), expire=FILM_CACHE_EXPIRE_IN_SECONDS)
-
-
-class GenresService:
-    def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
+        await self.redis.set(genre.id, genre.json(), expire=ProjectSettings().CACHE_EXPIRE_IN_SECONDS)
 
     async def get_page_number(self, sort: bool, page_number: int, films_on_page: int) -> Optional[ESGenre]:
         genres = await self._genres_from_cache(f'{sort}_{page_number}_{films_on_page}')
@@ -85,7 +79,7 @@ class GenresService:
 
     async def _put_genres_to_cache(self, genres: List[ESGenre], redis_key: str):
         await self.redis.set(
-            redis_key, json.dumps(genres, default=pydantic_encoder), expire=FILM_CACHE_EXPIRE_IN_SECONDS
+            redis_key, json.dumps(genres, default=pydantic_encoder), expire=ProjectSettings().CACHE_EXPIRE_IN_SECONDS
         )
 
 
@@ -95,11 +89,3 @@ def get_genre_service(
     elastic: AsyncElasticsearch = Depends(get_elastic),
 ) -> GenreService:
     return GenreService(redis, elastic)
-
-
-@lru_cache()
-def get_genres_service(
-    redis: Redis = Depends(get_redis),
-    elastic: AsyncElasticsearch = Depends(get_elastic),
-) -> GenresService:
-    return GenresService(redis, elastic)

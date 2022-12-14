@@ -1,4 +1,3 @@
-from typing import Optional, Tuple
 from psycopg2.extensions import connection as _connection
 from psycopg2.extras import DictCursor
 from backoff import backoff

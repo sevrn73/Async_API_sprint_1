@@ -1,4 +1,3 @@
-from typing import Optional, List
 from models.base_model import ESModel
 
 

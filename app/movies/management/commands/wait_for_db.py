@@ -1,7 +1,6 @@
 import time
 import subprocess
 import requests
-import json
 from django.db import connections
 from django.db.utils import OperationalError
 from django.core.management import BaseCommand
@@ -94,7 +93,7 @@ class Command(BaseCommand):
                     "type": "text",
                     "analyzer": "ru_en",
                     "fields": {
-                    "raw": { 
+                    "raw": {
                         "type":  "keyword"
                     }
                     }
@@ -205,7 +204,7 @@ class Command(BaseCommand):
                 "genre": {
                     "type": "text",
                     "analyzer": "ru_en",
-                    "raw": { 
+                    "raw": {
                         "type":  "keyword"
                     }
                 },
@@ -277,7 +276,7 @@ class Command(BaseCommand):
                     "name": {
                         "type": "text",
                         "analyzer": "ru_en",
-                        "raw": { 
+                        "raw": {
                             "type":  "keyword"
                         }
                     }

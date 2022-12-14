@@ -1,7 +1,7 @@
 from pydantic import BaseSettings, Field
 
 
-class PS(BaseSettings):
+class DbSettings(BaseSettings):
     dbname: str = Field('', env='POSTGRES_NAME')
     user: str = Field('', env='POSTGRES_USER')
     password: str = Field('', env='POSTGRES_PASSWORD')
@@ -9,7 +9,7 @@ class PS(BaseSettings):
     port: int = Field(5432, env='DB_PORT')
 
 
-class ES(BaseSettings):
+class ElasticSettings(BaseSettings):
     es_host: str = ...
     es_user: str = ...
     es_password: str = ...
