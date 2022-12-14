@@ -29,12 +29,12 @@ async def person_details(
 async def persons_details(
     sort: bool = False,
     page_number: int = 1,
-    presons_on_page: int = 5,
+    persons_on_page: int = 5,
     person_service: PersonService = Depends(get_person_service),
 ) -> List[Person]:
 
-    presons = await person_service.get_page_number(sort, page_number, presons_on_page)
-    if not presons:
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='presons not found')
+    persons = await person_service.get_page_number(sort, page_number, persons_on_page)
+    if not persons:
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail='persons not found')
 
-    return presons
+    return persons

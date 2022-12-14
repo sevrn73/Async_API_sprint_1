@@ -7,56 +7,26 @@ from aioredis import Redis
 from elasticsearch import AsyncElasticsearch, NotFoundError
 from fastapi import Depends
 
+from services.base_service import BaseService
 from core.config import ProjectSettings
 from db.elastic import get_elastic
 from db.redis import get_redis
 from models.film import ESFilm
 
 
-class FilmService:
+class FilmService(BaseService):
     def __init__(self, redis: Redis, elastic: AsyncElasticsearch):
-        self.redis = redis
-        self.elastic = elastic
+        super().__init__(redis, elastic)
+        self.model = ESFilm
 
-    async def get_by_id(self, film_id: str) -> Optional[ESFilm]:
-        film = await self._film_from_cache(film_id)
-        if not film:
-            film = await self._get_film_from_elastic(film_id)
-            if not film:
-                return None
-            await self._put_film_to_cache(film)
-        return film
-
-    async def _get_film_from_elastic(self, film_id: str) -> Optional[ESFilm]:
+    async def _get_from_elastic(self, film_id: str) -> Optional[ESFilm]:
         try:
             doc = await self.elastic.get('movies', film_id)
         except NotFoundError:
             return None
-        return ESFilm(**doc['_source'])
+        return self.model(**doc['_source'])
 
-    async def _film_from_cache(self, film_id: str) -> Optional[ESFilm]:
-        data = await self.redis.get(film_id)
-        if not data:
-            return None
-
-        film = ESFilm.parse_raw(data)
-        return film
-
-    async def _put_film_to_cache(self, film: ESFilm):
-        await self.redis.set(film.id, film.json(), expire=ProjectSettings().CACHE_EXPIRE_IN_SECONDS)
-
-    async def get_page_number(
-        self, rating_filter: float, sort: bool, page_number: int, films_on_page: int
-    ) -> Optional[List[ESFilm]]:
-        films = await self._films_from_cache(f'{rating_filter}_{sort}_{page_number}_{films_on_page}')
-        if not films:
-            films = await self._get_films_from_elastic(rating_filter, sort, page_number, films_on_page)
-            if not films:
-                return None
-            await self._put_films_to_cache(films, f'{rating_filter}_{sort}_{page_number}_{films_on_page}')
-        return films
-
-    async def _get_films_from_elastic(
+    async def _get_data_from_elastic(
         self, rating_filter: float, sort: bool, page_number: int, films_on_page: int
     ) -> Optional[List[ESFilm]]:
         try:
@@ -77,20 +47,18 @@ class FilmService:
             )
         except NotFoundError:
             return None
-        return [ESFilm(**_['_source']) for _ in films['hits']['hits']]
+        return [self.model(**_['_source']) for _ in films['hits']['hits']]
 
-    async def _films_from_cache(self, redis_key: str) -> Optional[List[ESFilm]]:
-        data = await self.redis.get(redis_key)
+    async def get_page_number(
+        self, rating_filter: float, sort: bool, page_number: int, data_on_page: int
+    ) -> Optional[List[ESFilm]]:
+        data = await self._many_data_from_cache(f'{rating_filter}_{sort}_{page_number}_{data_on_page}')
         if not data:
-            return None
-        films = parse_raw_as(List[ESFilm], data)
-        return films
-
-    async def _put_films_to_cache(self, films: List[ESFilm], redis_key: str):
-        await self.redis.set(
-            redis_key, json.dumps(films, default=pydantic_encoder), expire=ProjectSettings().CACHE_EXPIRE_IN_SECONDS
-        )
-
+            data = await self._get_data_from_elastic(rating_filter, sort, page_number, data_on_page)
+            if not data:
+                return None
+            await self._put_many_data_to_cache(data, f'{rating_filter}_{sort}_{page_number}_{data_on_page}')
+        return data
 
 @lru_cache()
 def get_film_service(
