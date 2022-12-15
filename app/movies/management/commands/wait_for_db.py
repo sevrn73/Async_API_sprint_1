@@ -297,4 +297,4 @@ class Command(BaseCommand):
         p = subprocess.Popen(['python', 'sqlite_to_postgres/load_data.py'])
         p.wait()
 
-        subprocess.run(['sh', '/opt/app/uwsgi_worker.sh'])
+        subprocess.run(['gunicorn', 'example.wsgi:application', '--workers=2', '--bind', '0.0.0.0:8000'])
